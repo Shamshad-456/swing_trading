@@ -1,0 +1,168 @@
+<script>
+    // WebSocket connection setup
+    const tradeId = '{{ trade_id }}'; // Ensure trade_id is passed from the view
+    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const socket = new WebSocket(`${protocol}://${window.location.host}/ws/pnl_updates/${tradeId}/`);
+
+    // Handle incoming messages from the WebSocket
+    socket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        // console.log(data)
+        
+        // Check if there's a message indicating the market status
+        if (data.message) {
+            console.log(data.message);
+            if (data.message === "Market is closed") {
+                socket.close();
+            }
+        } else {
+            // Update the relevant elements with the received data
+            updateElement('current-price', data.current_price);
+            updateElement('initial-pnl', data.pnl);
+            updateElement('interest-cost', data.interest_cost);
+            updateElement('stt-buy', data.breakdown.stt_buy);
+            updateElement('stt-sell', data.breakdown.stt_sell);
+            updateElement('transaction-charges', data.breakdown.transaction_charges);
+            updateElement('sebi-charges', data.breakdown.sebi_charges);
+            updateElement('stamp-duty', data.breakdown.stamp_duty);
+            updateElement('gst', data.breakdown.gst);
+            updateElement('total-charges', data.total_charges);
+            updateElement('final-pnl', data.final_pnl);
+        }
+    };
+
+    // Handle WebSocket close event
+    socket.onclose = function(e) {
+        console.error('WebSocket closed unexpectedly');
+    };
+
+    // Handle WebSocket error event
+    socket.onerror = function(error) {
+        console.error('WebSocket error:', error);
+    };
+
+    // Function to update elements with the received data
+    function updateElement(id, value) {
+        const element = document.getElementById(id);
+        if (element) { // Check if the element exists
+            element.innerText = parseFloat(value).toFixed(2);
+            element.classList.add('highlight');
+            setTimeout(() => {
+                element.classList.remove('highlight');
+            }, 1000);
+        }
+    }
+
+   
+    document.addEventListener('DOMContentLoaded', function () {
+        const saveTradeButton = document.getElementById('saveTrade'); // Update with your button ID
+        const loginModal = document.getElementById('loginModal'); // Assuming you have an ID for your login modal
+        const registerModal = document.getElementById('registerModal'); // Assuming you have an ID for your register modal
+        const accessToken = localStorage.getItem('access_token');
+
+        // Retrieve result data from the script tag
+        console.log('DOM fully loaded and parsed');
+        const resultElement = document.getElementById('resultData');
+        console.log(resultElement);
+        let result = null;
+        if (resultElement && resultElement.type === "application/json") {
+            try {
+                result = JSON.parse(resultElement.textContent); // Parse the JSON content
+                // Continue with your logic
+                console.log('Result data:', result);
+            } catch (error) {
+                console.error('Error parsing JSON:', error);
+            }
+        } else {
+            console.error('Result element not found or incorrect type.');
+        }
+
+        // Function to check if the access token is expired
+        function isTokenExpired(token) {
+            if (!token) return true; // Token is considered expired if it doesn't exist
+            
+            const payload = JSON.parse(atob(token.split('.')[1])); // Decode the token payload
+            const expirationTime = payload.exp * 1000; // Convert expiration time to milliseconds
+            
+            return Date.now() >= expirationTime; // Return true if the current time is greater than the expiration time
+        }
+
+        const isAuthenticated = accessToken && !isTokenExpired(accessToken); // User is authenticated if token exists and is not expired
+        const userExists = !!accessToken; // User exists if token is present, regardless of its validity
+
+        saveTradeButton.addEventListener('click', function (e) {
+            e.preventDefault(); // Prevent the default form submission
+
+            if (!isAuthenticated) {
+                // Show the login modal if the user exists (token is present) and is not authenticated
+                if (userExists) {
+                    loginModal.classList.add('show'); // Show login modal
+                } else {
+                    registerModal.classList.add('show'); // Show register modal
+                }
+            } else {
+                const tradeData = {
+                    trade_id: tradeId,                    // Assuming tradeId is already available
+                    scrip: result.scrip,                  // Stock/Trade Scrip
+                    trade_date: result.trade_date,        // Trade Date
+                    buy_price: result.buy_price,          // Buy Price
+                    quantity: result.quantity,             // Quantity of shares bought
+                    margin: result.margin,                 // Margin for the trade
+                    interest_rate: result.interest_rate,   // Interest rate on the margin
+                    exchange: result.exchange,             // Exchange where the trade occurred
+                    current_price: result.current_price,   // Current price of the stock
+                    pnl: result.pnl,                       // Initial P&L
+                    interest_cost: result.interest_cost,   // Interest cost for the trade
+                    final_pnl: result.final_pnl,           // Final Profit or Loss (PnL)
+                    charges_breakdown: {
+                        stt_buy: result.breakdown.stt_buy,                  // STT for Buy
+                        stt_sell: result.breakdown.stt_sell,                // STT for Sell
+                        transaction_charges: result.breakdown.transaction_charges,  // Transaction Charges
+                        sebi_charges: result.breakdown.sebi_charges,        // SEBI Charges
+                        stamp_duty: result.breakdown.stamp_duty,            // Stamp Duty
+                        gst: result.breakdown.gst                          // GST (Goods and Services Tax)
+                    },
+                    total_charges: result.total_charges,
+                    is_open:true
+                };
+
+                // Make a POST request to save the trade
+                fetch('http://127.0.0.1:8000/trade/save_trade/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${accessToken}`  // Assuming you're using JWT for authentication
+                    },
+                    body: JSON.stringify(tradeData)  // Convert trade data to JSON for sending in the request
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log('Trade saved successfully');
+                    } else {
+                        console.error('Failed to save trade:', data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error saving trade:', error);
+                    // Optionally, display a generic error message
+                });                
+            }
+        });
+    });
+
+
+
+
+    // Close modals when clicking outside of them
+    window.onclick = function(event) {
+        const loginModal = document.getElementById('loginModal');
+        const registerModal = document.getElementById('registerModal');
+        if (loginModal && event.target === loginModal) {
+            loginModal.style.display = 'none';
+        }
+        if (registerModal && event.target === registerModal) {
+            registerModal.style.display = 'none';
+        }
+    }
+</script>

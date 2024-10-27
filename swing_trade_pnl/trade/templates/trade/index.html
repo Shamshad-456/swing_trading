@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trade P&L Calculator</title>
+    <!-- Bootstrap CSS for dark theme -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #343a40; /* Dark background */
+            color: white; /* Light text color */
+        }
+        label {
+            color: #f8f9fa; /* Lighter label color */
+        }
+        .highlight {
+            background-color: #007bff; /* Highlight color */
+            color: white; /* Text color when highlighted */
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">Trade P&L Calculator</h1>
+        <form method="post" action="{% url 'calculate_trade_pnl' %}">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="id_scrip">Scrip:</label>
+                <input type="text" class="form-control" name="scrip" id="id_scrip" required>
+            </div>
+            <div class="form-group">
+                <label for="id_buy_price">Buy Price:</label>
+                <input type="number" class="form-control" name="buy_price" id="id_buy_price" required>
+            </div>
+            <div class="form-group">
+                <label for="id_quantity">Quantity:</label>
+                <input type="number" class="form-control" name="quantity" id="id_quantity" required>
+            </div>
+            <div class="form-group">
+                <label for="id_trade_date">Trade Date (YYYY-MM-DD):</label>
+                <input type="date" class="form-control" name="trade_date" id="id_trade_date" required>
+            </div>
+            <div class="form-group">
+                <label for="id_margin">Margin (2x, 3x, etc.):</label>
+                <input type="text" class="form-control" name="margin" id="id_margin" required>
+            </div>
+            <div class="form-group">
+                <label for="id_interest_rate">Daily Interest Rate (%):</label>
+                <input type="number" class="form-control" name="interest_rate" id="id_interest_rate" value="0.04" step="0.01" required>
+            </div>
+            <div class="form-group">
+                <label for="id_exchange">Exchange:</label>
+                <select name="exchange" id="id_exchange" class="form-control">
+                    <option value="NSE">NSE</option>
+                    <option value="BSE">BSE</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Calculate P&L</button>
+        </form>
+    </div>
+
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

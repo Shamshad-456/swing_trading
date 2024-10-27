@@ -1,0 +1,120 @@
+<!-- Login Modal -->
+<div id="loginModal" class="modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Login</h5>
+                <span class="close" data-dismiss="modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="loginForm">
+                    <input type="text" id="loginUsername" placeholder="Username" required>
+                    <input type="password" id="loginPassword" placeholder="Password" required>
+                    <button type="submit">Login</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Registration Modal -->
+<div id="registerModal" class="modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Register</h5>
+                <span class="close" data-dismiss="modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="registerForm">
+                    <input type="text" id="registerUsername" placeholder="Username" required>
+                    <input type="password" id="registerPassword" placeholder="Password" required>
+                    <button type="submit">Register</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+
+        // Login form submission
+        loginForm.addEventListener('submit', function (e) {
+            e.preventDefault(); // Prevent default form submission
+
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+
+            fetch('/api/token/', { // Adjust the URL as necessary
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: username,
+                    password: password
+                }),
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Login failed');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Save access and refresh tokens to local storage
+                localStorage.setItem('access_token', data.access);
+                localStorage.setItem('refresh_token', data.refresh);
+                // Close the modal
+                document.getElementById('loginModal').classList.remove('show');
+                window.location.reload(); // Reload the page to update UI
+            })
+            .catch(error => {
+                alert(error.message); // Show error message
+            });
+        });
+
+        // Registration form submission
+        registerForm.addEventListener('submit', function (e) {
+            e.preventDefault(); // Prevent default form submission
+
+            const username = document.getElementById('registerUsername').value;
+            const password = document.getElementById('registerPassword').value;
+
+            fetch('/accounts/users/create/', { // Adjust the URL based on your Django endpoint
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: username,
+                    password: password
+                }),
+            })
+            .then(response => {
+                if (!response.ok) {
+                    console.log(response)
+                    throw new Error('Registration failed');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Store access and refresh tokens in local storage
+                localStorage.setItem('access_token', data.access);
+                localStorage.setItem('refresh_token', data.refresh);
+                // Close the registration modal
+                document.getElementById('registerModal').classList.remove('show');
+                alert('Registration successful! You are now logged in.');
+                window.location.reload(); // Reload the page to update UI
+            })
+            .catch(error => {
+                alert(error.message); // Show error message
+            });
+        });
+    });
+</script>
+    
